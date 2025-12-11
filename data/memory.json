@@ -1,0 +1,54 @@
+{
+  "user": {
+    "name": "Guilherme",
+    "language": "pt-BR",
+    "timezone": "America/Sao_Paulo",
+    "style": "conciso, direto, pragmatico; prefere portugues",
+    "goals": [
+      "Construir o Jarvez como sistema operacional pessoal",
+      "Iterar rapido em IA aplicada a automacao",
+      "Expandir para voz, visao e integracoes locais"
+    ]
+  },
+  "facts": [
+    {
+      "id": "seed-jarvez",
+      "content": "Jarvez e o assistente de OS pessoal do Guilherme.",
+      "source": "seed",
+      "timestamp": "2024-01-01T00:00:00Z",
+      "type": "project"
+    },
+    {
+      "id": "profile-core",
+      "content": "Gui e engenheiro de software/IA focado em construcao rapida e pratica.",
+      "source": "seed",
+      "timestamp": "2024-01-01T00:00:00Z",
+      "type": "profile"
+    },
+    {
+      "id": "style-pref",
+      "content": "Prefere respostas curtas, praticas e em portugues.",
+      "source": "seed",
+      "timestamp": "2024-01-01T00:00:00Z",
+      "type": "preference"
+    },
+    {
+      "id": "project-jarvez",
+      "content": "Projeto atual: Jarvez como Personal Operating System com skills, memoria, voz e automacao local.",
+      "source": "seed",
+      "timestamp": "2024-01-01T00:00:00Z",
+      "type": "project"
+    },
+    {
+      "id": "goal-mid",
+      "content": "Objetivo de medio prazo: ter Jarvez respondendo sobre o Gui e tomando acoes com memoria persistente.",
+      "source": "seed",
+      "timestamp": "2024-01-01T00:00:00Z",
+      "type": "goal"
+    }
+  ],
+  "dynamic_facts": [],
+  "state": {
+    "last_mode": "system"
+  }
+}

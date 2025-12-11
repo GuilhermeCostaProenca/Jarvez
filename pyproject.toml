@@ -1,0 +1,27 @@
+﻿[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvez"
+version = "0.9.0"
+description = "Personal OS style assistant (Jarvez)"
+authors = [{ name = "Guilherme" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "openai>=1.37.0",
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "pytest>=8.2.0",
+  "httpx>=0.27.0",
+  "PySide6>=6.7.0",
+  "psutil>=5.9.0"
+]
+
+[project.scripts]
+jarvez = "jarvez.interface.cli:main"
+jarvez-voice = "jarvez.interface.voice_cli:main"
+
+[tool.setuptools.packages.find]
+include = ["jarvez*"]
