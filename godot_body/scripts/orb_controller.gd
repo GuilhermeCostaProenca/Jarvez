@@ -94,18 +94,19 @@ func _update_rotation(delta: float) -> void:
 	rot_velocity = rot_velocity.lerp(Vector2.ZERO, clamp(4.0 * delta, 0.0, 1.0))
 
 
-func _update_mouse_push(delta: float) -> void:
+func _update_mouse_push(_delta: float) -> void:
 	if cam == null:
 		return
-	var screen_pos := cam.project_position(global_transform.origin)
-	var mouse_pos := get_viewport().get_mouse_position()
-	var dist := mouse_pos.distance_to(screen_pos)
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var screen_pos: Vector2 = cam.project_position(global_transform.origin, viewport_size)
+	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+	var dist: float = mouse_pos.distance_to(screen_pos)
 	# Closer mouse increases field distortion; clamp to a sensible radius.
 	mouse_push = clamp(1.0 - (dist / 420.0), 0.0, 1.0)
 
 
-func _update_materials(delta: float) -> void:
-	var preset := STATE_PRESETS.get(current_state, STATE_PRESETS["idle"])
+func _update_materials(_delta: float) -> void:
+	var preset: Dictionary = STATE_PRESETS.get(current_state, STATE_PRESETS["idle"])
 	var target_intensity: float = lerp(preset["intensity"], current_intensity, 0.6)
 
 	if core:
@@ -128,10 +129,10 @@ func _update_materials(delta: float) -> void:
 			ring_mat.set_shader_parameter("base_color", _mood_color())
 
 
-func _update_particles(delta: float) -> void:
+func _update_particles(_delta: float) -> void:
 	if particles == null:
 		return
-	var preset := STATE_PRESETS.get(current_state, STATE_PRESETS["idle"])
+	var preset: Dictionary = STATE_PRESETS.get(current_state, STATE_PRESETS["idle"])
 	particles.speed_scale = preset["speed"]
 	particles.amount = int(500 + 500 * current_intensity)
 	particles.scale_amount_min = 0.7 + current_intensity * 0.2
@@ -140,10 +141,10 @@ func _update_particles(delta: float) -> void:
 
 func _update_debug() -> void:
 	if debug_label:
-		debug_label.text = "state: %s | intensity: %.2f".sprintf([current_state, current_intensity])
+		debug_label.text = "state: %s | intensity: %.2f" % [current_state, current_intensity]
 
 
-func _apply_state(immediate: bool = false) -> void:
+func _apply_state(_immediate: bool = false) -> void:
 	# Called on state/intensity/mood changes; pushes parameters to materials immediately.
 	_update_materials(0.0)
 	_update_particles(0.0)
