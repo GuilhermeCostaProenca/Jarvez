@@ -1,0 +1,5 @@
+res://scripts/orb_controller.gd
+res://scripts/state_bus.gd
+res://scenes/default_env.tres
+res://shaders/orb_energy.gdshader
+res://shaders/ring_distortion.gdshader

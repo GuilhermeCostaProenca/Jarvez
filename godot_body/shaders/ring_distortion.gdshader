@@ -28,17 +28,21 @@ void vertex() {
 	float t = TIME * time_scale;
 	vec3 p = (NORMAL + VERTEX) * noise_scale;
 	float n = noise(p + vec3(t * 0.8, t * 0.4, t * 1.1));
-	float wobble = (n - 0.5) * distortion * 0.6 + mouse_push * 0.12;
+	float swirl = sin(atan(VERTEX.x, VERTEX.z) * 8.0 + t * 2.0) * 0.15;
+	float wobble = (n - 0.5) * distortion * 0.6 + mouse_push * 0.12 + swirl * distortion;
 	VERTEX += NORMAL * wobble;
 }
 
 void fragment() {
 	float rim = clamp(abs(NORMAL.z), 0.0, 1.0);
-	float glow = pow(rim, 6.0) + intensity * 0.5;
 	float t = TIME * time_scale;
 	float flicker = 0.25 + 0.25 * sin(t * 3.1);
+	float swirl = 0.35 + 0.25 * sin(atan(NORMAL.x, NORMAL.z) * 6.0 + t * 1.7);
+
 	vec3 col = base_color.rgb;
+	float glow = pow(rim, 6.0) + intensity * 0.35 + swirl * 0.5 + mouse_push * 0.35;
+
 	ALBEDO = col;
-	EMISSION = col * (glow + flicker + mouse_push * 0.6);
-	ALPHA = clamp(glow, 0.05, 1.0);
+	EMISSION = col * (glow + flicker * 0.7);
+	ALPHA = clamp(glow * 0.7, 0.05, 0.8);
 }

@@ -1,4 +1,5 @@
 extends Node
+class_name StateBus
 
 signal state_changed(state: String)
 signal intensity_changed(intensity: float)
@@ -11,9 +12,9 @@ var state: String = "idle"
 var intensity: float = 0.5
 var mood: String = "calm"
 
-var _ws := WebSocketClient.new()
-var _retry_timer := 0.0
-var _connected := false
+var _ws: WebSocketPeer = WebSocketPeer.new()
+var _retry_timer: float = 0.0
+var _connected: bool = false
 
 
 func _ready() -> void:
@@ -26,11 +27,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	# Keep the socket alive and read incoming packets.
-	if _ws.get_connection_status() in [
-		WebSocketClient.CONNECTION_CONNECTING,
-		WebSocketClient.CONNECTION_CONNECTED,
-	]:
-		_connected = _ws.get_connection_status() == WebSocketClient.CONNECTION_CONNECTED
+	var ws_state: int = _ws.get_ready_state()
+	if ws_state == WebSocketPeer.STATE_CONNECTING or ws_state == WebSocketPeer.STATE_OPEN:
+		_connected = ws_state == WebSocketPeer.STATE_OPEN
 		_ws.poll()
 		while _ws.get_available_packet_count() > 0:
 			_handle_packet(_ws.get_packet())
@@ -42,7 +41,8 @@ func _process(delta: float) -> void:
 
 
 func _connect_ws() -> void:
-	var err := _ws.connect_to_url(WS_URL)
+	_ws = WebSocketPeer.new()
+	var err: int = _ws.connect_to_url(WS_URL)
 	if err != OK:
 		# If the server is down, schedule another try.
 		_retry_timer = RETRY_SEC
@@ -65,7 +65,7 @@ func _apply_payload(data: Dictionary) -> void:
 			state = new_state
 			emit_signal("state_changed", state)
 	if data.has("intensity"):
-		var new_intensity := clamp(float(data["intensity"]), 0.0, 1.2)
+		var new_intensity: float = clamp(float(data["intensity"]), 0.0, 1.2)
 		if !is_equal_approx(new_intensity, intensity):
 			intensity = new_intensity
 			emit_signal("intensity_changed", intensity)
@@ -74,3 +74,7 @@ func _apply_payload(data: Dictionary) -> void:
 		if new_mood != mood:
 			mood = new_mood
 			emit_signal("mood_changed", mood)
+
+
+func ws_is_connected() -> bool:
+	return _connected

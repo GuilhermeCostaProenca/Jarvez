@@ -1,7 +1,8 @@
-[gd_scene load_steps=11 format=3 uid="uid://orbscene"]
+[gd_scene load_steps=17 format=3 uid="uid://orbscene"]
 
 [ext_resource type="Shader" uid="uid://bwh2yyk65883l" path="res://shaders/orb_energy.gdshader" id="1"]
 [ext_resource type="Shader" uid="uid://b2nolp1h4wprt" path="res://shaders/ring_distortion.gdshader" id="2"]
+[ext_resource type="Shader" path="res://shaders/filament_field.gdshader" id="6"]
 [ext_resource type="Script" uid="uid://d1obb20fnitk1" path="res://scripts/orb_controller.gd" id="3"]
 [ext_resource type="Script" uid="uid://c01m2oivqfaxi" path="res://scripts/state_bus.gd" id="4"]
 [ext_resource type="Environment" uid="uid://defaultenv" path="res://scenes/default_env.tres" id="5"]
@@ -27,6 +28,25 @@ shader_parameter/mouse_push = 0.0
 inner_radius = 0.65
 outer_radius = 0.95
 
+[sub_resource type="ShaderMaterial" id="7"]
+render_priority = 0
+shader = ExtResource("2")
+shader_parameter/base_color = Color(0.2, 0.9, 0.7, 0.7)
+shader_parameter/intensity = 0.45
+shader_parameter/distortion = 0.25
+shader_parameter/noise_scale = 2.0
+shader_parameter/time_scale = 0.85
+shader_parameter/mouse_push = 0.0
+
+[sub_resource type="TorusMesh" id="8"]
+inner_radius = 1.05
+outer_radius = 1.4
+ring_sides = 72
+sides = 96
+
+[sub_resource type="SphereMesh" id="9"]
+radius = 0.05
+
 [sub_resource type="ParticleProcessMaterial" id="6"]
 emission_shape = 2
 emission_sphere_radius = 0.8
@@ -42,15 +62,78 @@ radial_accel_min = -0.5
 radial_accel_max = 0.5
 damping_min = 0.12
 damping_max = 0.35
-scale_min = 0.04
-scale_max = 0.08
+scale_min = 0.015
+scale_max = 0.05
 color = Color(0.45, 0.9, 1, 0.75)
+
+[sub_resource type="ParticleProcessMaterial" id="10"]
+emission_shape = 2
+emission_sphere_radius = 1.1
+direction = Vector3(0, 0, 0)
+spread = 60.0
+initial_velocity_min = 0.4
+initial_velocity_max = 0.9
+angular_velocity_min = 0.1
+angular_velocity_max = 0.5
+orbit_velocity_max = 1.2
+gravity = Vector3(0, 0, 0)
+radial_accel_min = -0.2
+radial_accel_max = 0.4
+damping_min = 0.06
+damping_max = 0.18
+scale_min = 0.01
+scale_max = 0.03
+color = Color(0.5, 1, 0.8, 0.6)
+trail_enabled = true
+trail_lifetime = 0.4
+trail_divisor = 2
+
+[sub_resource type="ParticleProcessMaterial" id="13"]
+emission_shape = 2
+emission_sphere_radius = 1.0
+direction = Vector3(0, 0, 0)
+spread = 85.0
+initial_velocity_min = 1.5
+initial_velocity_max = 2.8
+angular_velocity_min = 0.2
+angular_velocity_max = 0.7
+orbit_velocity_max = 1.4
+gravity = Vector3(0, 0, 0)
+radial_accel_min = -0.3
+radial_accel_max = 0.6
+damping_min = 0.08
+damping_max = 0.2
+scale_min = 0.08
+scale_max = 0.18
+color = Color(0.5, 1, 0.8, 0.6)
+trail_enabled = true
+trail_lifetime = 0.5
+trail_divisor = 2
+
+[sub_resource type="ShaderMaterial" id="11"]
+render_priority = 0
+shader = ExtResource("6")
+shader_parameter/energy_color = Color(0.35, 0.8, 1, 1)
+shader_parameter/intensity = 0.7
+shader_parameter/noise_scale = 2.3
+shader_parameter/time_scale = 1.05
+shader_parameter/band_thickness = 0.32
+shader_parameter/noise_amp = 0.55
+shader_parameter/pulse = 0.45
+shader_parameter/mouse_push = 0.0
+
+[sub_resource type="SphereMesh" id="12"]
+radius = 1.25
 
 [node name="OrbRoot" type="Node3D"]
 script = ExtResource("3")
 core_mesh_path = NodePath("Core")
 ring_mesh_path = NodePath("Ring")
+ring2_mesh_path = NodePath("RingOuter")
 particles_path = NodePath("Sparks")
+wisps_path = NodePath("Wisps")
+arcs_path = NodePath("Arcs")
+shell_mesh_path = NodePath("Shell")
 camera_path = NodePath("Camera3D")
 debug_label_path = NodePath("Debug/Label")
 
@@ -69,6 +152,12 @@ transform = Transform3D(0.902585, 0, 0.430511, -0.17101, 0.852869, 0.492404, -0.
 light_energy = 3.0
 light_indirect_energy = 1.2
 
+[node name="CoreLight" type="OmniLight3D" parent="."]
+omni_range = 6.0
+light_energy = 5.0
+light_indirect_energy = 2.0
+light_color = Color(0.6, 0.9, 1, 1)
+
 [node name="Core" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.031608462, 0.0061616898, 0.023297787)
 material_override = SubResource("2")
@@ -78,6 +167,10 @@ mesh = SubResource("1")
 material_override = SubResource("4")
 mesh = SubResource("3")
 
+[node name="RingOuter" type="MeshInstance3D" parent="."]
+material_override = SubResource("7")
+mesh = SubResource("8")
+
 [node name="Sparks" type="GPUParticles3D" parent="."]
 amount = 650
 lifetime = 1.8
@@ -86,6 +179,38 @@ explosiveness = 0.2
 randomness = 0.4
 fixed_fps = 60
 process_material = SubResource("6")
+draw_passes = 1
+draw_pass_1 = SubResource("9")
+
+[node name="Wisps" type="GPUParticles3D" parent="."]
+amount = 320
+lifetime = 1.8
+preprocess = 0.2
+explosiveness = 0.05
+randomness = 0.3
+fixed_fps = 60
+trail_enabled = true
+trail_lifetime = 0.35
+process_material = SubResource("10")
+draw_passes = 1
+draw_pass_1 = SubResource("9")
+
+[node name="Arcs" type="GPUParticles3D" parent="."]
+amount = 120
+lifetime = 1.4
+preprocess = 0.05
+explosiveness = 0.08
+randomness = 0.2
+fixed_fps = 60
+trail_enabled = true
+trail_lifetime = 0.5
+process_material = SubResource("13")
+draw_passes = 1
+draw_pass_1 = SubResource("9")
+
+[node name="Shell" type="MeshInstance3D" parent="."]
+mesh = SubResource("12")
+material_override = SubResource("11")
 
 [node name="Debug" type="CanvasLayer" parent="."]
 
