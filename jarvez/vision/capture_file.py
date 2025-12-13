@@ -14,7 +14,7 @@ def load_file(path: str | Path) -> Optional[str]:
         return None
     if file_path.suffix.lower() in {".txt", ".md"}:
         try:
-            return file_path.read_text(encoding="utf-8")
+            return file_path.read_text(encoding="utf-8-sig")
         except Exception as exc:
             logging.error("Failed to read text file: %s", exc)
             return None

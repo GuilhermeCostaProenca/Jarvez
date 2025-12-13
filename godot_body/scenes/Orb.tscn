@@ -1,70 +1,71 @@
-[gd_scene load_steps=10 format=3 uid="uid://orbscene"]
+[gd_scene load_steps=14 format=3 uid="uid://orbscene"]
 
-[ext_resource type="Shader" path="res://shaders/hologram_core.gdshader" id="1"]
-[ext_resource type="Shader" path="res://shaders/ring_holo.gdshader" id="2"]
-[ext_resource type="Shader" path="res://shaders/shell_fresnel.gdshader" id="3"]
-[ext_resource type="Script" path="res://scripts/orb_controller.gd" id="4"]
-[ext_resource type="Script" path="res://scripts/state_bus.gd" id="5"]
-[ext_resource type="Environment" path="res://scenes/default_env.tres" id="6"]
+[ext_resource type="Shader" uid="uid://bp0fht3gla3kg" path="res://shaders/hologram_core.gdshader" id="1"]
+[ext_resource type="Shader" uid="uid://metmqu4dpoud" path="res://shaders/ring_holo.gdshader" id="2"]
+[ext_resource type="Shader" uid="uid://vadxtivf13ls" path="res://shaders/shell_fresnel.gdshader" id="3"]
+[ext_resource type="Script" uid="uid://c01m2oivqfaxi" path="res://scripts/state_bus.gd" id="5"]
+[ext_resource type="Environment" uid="uid://defaultenv" path="res://scenes/default_env.tres" id="6"]
+
+[sub_resource type="ShaderMaterial" id="2"]
+render_priority = 0
+shader = ExtResource("1")
+shader_parameter/core_color = Color(0.2, 0.75, 1, 1)
+shader_parameter/edge_color = Color(0.9, 1, 1, 0.8)
+shader_parameter/intensity = 0.3
+shader_parameter/fresnel_power = 3.0
+shader_parameter/grid_scale = 10.0
+shader_parameter/grid_thickness = 0.02
+shader_parameter/scan_speed = 0.3
+shader_parameter/pulse = 0.25
 
 [sub_resource type="SphereMesh" id="1"]
 rings = 64
-radial_segments = 64
 
-[sub_resource type="ShaderMaterial" id="2"]
-shader = ExtResource("1")
-shader_parameter/core_color = Color(0.25, 0.8, 1, 1)
-shader_parameter/edge_color = Color(0.9, 1, 1, 0.8)
-shader_parameter/intensity = 0.5
+[sub_resource type="ShaderMaterial" id="4"]
+render_priority = 0
+shader = ExtResource("2")
+shader_parameter/ring_color = Color(0.35, 0.9, 1, 1)
+shader_parameter/intensity = 0.22
+shader_parameter/line_density = 18.0
+shader_parameter/line_thickness = 0.015
+shader_parameter/scroll_speed = 0.18
+shader_parameter/fresnel_power = 3.0
 
 [sub_resource type="TorusMesh" id="3"]
 inner_radius = 0.6
 outer_radius = 0.9
-ring_sides = 96
-sides = 128
 
-[sub_resource type="ShaderMaterial" id="4"]
+[sub_resource type="ShaderMaterial" id="6"]
+render_priority = 0
 shader = ExtResource("2")
-shader_parameter/ring_color = Color(0.35, 0.9, 1, 1)
-shader_parameter/intensity = 0.5
-shader_parameter/line_density = 18.0
-shader_parameter/scroll_speed = 0.4
+shader_parameter/ring_color = Color(1, 0.75, 0.35, 1)
+shader_parameter/intensity = 0.18
+shader_parameter/line_density = 24.0
+shader_parameter/line_thickness = 0.015
+shader_parameter/scroll_speed = -0.12
+shader_parameter/fresnel_power = 3.0
 
 [sub_resource type="TorusMesh" id="5"]
 inner_radius = 1.1
 outer_radius = 1.5
-ring_sides = 96
-sides = 160
-
-[sub_resource type="ShaderMaterial" id="6"]
-shader = ExtResource("2")
-shader_parameter/ring_color = Color(1, 0.75, 0.35, 1)
-shader_parameter/intensity = 0.35
-shader_parameter/line_density = 24.0
-shader_parameter/scroll_speed = -0.25
-
-[sub_resource type="SphereMesh" id="7"]
-radius = 1.9
-rings = 96
-radial_segments = 128
 
 [sub_resource type="ShaderMaterial" id="8"]
+render_priority = 0
 shader = ExtResource("3")
 shader_parameter/energy_color = Color(0.3, 0.85, 1, 1)
-shader_parameter/intensity = 0.25
+shader_parameter/intensity = 0.15
 shader_parameter/fresnel_power = 3.5
 shader_parameter/grid_scale = 14.0
 shader_parameter/grid_thickness = 0.015
-shader_parameter/scan_speed = 0.3
+shader_parameter/scan_speed = 0.18
+shader_parameter/wave_amp = 0.02
+
+[sub_resource type="SphereMesh" id="7"]
+radius = 1.9
+radial_segments = 128
+rings = 96
 
 [node name="OrbRoot" type="Node3D"]
-script = ExtResource("4")
-core_mesh_path = NodePath("Core")
-ring_mesh_path = NodePath("RingInner")
-ring2_mesh_path = NodePath("RingOuter")
-shell_mesh_path = NodePath("Shell")
-camera_path = NodePath("Camera3D")
-debug_label_path = NodePath("Debug/Label")
 
 [node name="StateBus" type="Node" parent="."]
 script = ExtResource("5")
@@ -77,20 +78,20 @@ fov = 52.0
 environment = ExtResource("6")
 
 [node name="Core" type="MeshInstance3D" parent="."]
-mesh = SubResource("1")
 material_override = SubResource("2")
+mesh = SubResource("1")
 
 [node name="RingInner" type="MeshInstance3D" parent="."]
-mesh = SubResource("3")
 material_override = SubResource("4")
+mesh = SubResource("3")
 
 [node name="RingOuter" type="MeshInstance3D" parent="."]
-mesh = SubResource("5")
 material_override = SubResource("6")
+mesh = SubResource("5")
 
 [node name="Shell" type="MeshInstance3D" parent="."]
-mesh = SubResource("7")
 material_override = SubResource("8")
+mesh = SubResource("7")
 
 [node name="Debug" type="CanvasLayer" parent="."]
 

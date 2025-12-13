@@ -18,7 +18,7 @@ class MoodStore:
     def _load(self) -> None:
         if self.path.exists():
             try:
-                self._data = json.loads(self.path.read_text(encoding="utf-8"))
+                self._data = json.loads(self.path.read_text(encoding="utf-8-sig"))
             except Exception as exc:
                 logging.error("Failed to load mood trace: %s", exc)
                 self._data = []

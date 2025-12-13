@@ -27,7 +27,7 @@ def create_entry(text: str, retriever: Retriever | None = None, mood_store: Mood
     data: List[Dict] = []
     if path.exists():
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            data = json.loads(path.read_text(encoding="utf-8-sig"))
         except Exception:
             data = []
     data.append(entry)
@@ -59,7 +59,7 @@ def summarize(period: str = "week") -> str:
     texts: List[str] = []
     for file in recent_files:
         try:
-            entries = json.loads(file.read_text(encoding="utf-8"))
+            entries = json.loads(file.read_text(encoding="utf-8-sig"))
             for e in entries:
                 texts.append(e.get("text", ""))
         except Exception:

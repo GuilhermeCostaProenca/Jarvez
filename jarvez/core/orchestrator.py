@@ -80,7 +80,7 @@ class Orchestrator:
                     }
                 )
         for note_path in (notes.NOTES_DIR.glob("*.txt")):
-            text = note_path.read_text(encoding="utf-8").strip()
+            text = note_path.read_text(encoding="utf-8-sig").strip()
             if text:
                 docs.append(
                     {

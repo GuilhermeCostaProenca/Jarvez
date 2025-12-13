@@ -1,1 +1,119 @@
-﻿[]
+[
+  {
+    "doc_id": "seed-jarvez",
+    "text": "Jarvez e o assistente de OS pessoal do Guilherme.",
+    "metadata": {
+      "type": "fact"
+    },
+    "embedding": {
+      "vector": [
+        "jarvez",
+        "e",
+        "o",
+        "assistente",
+        "de",
+        "os",
+        "pessoal",
+        "do",
+        "guilherme."
+      ],
+      "kind": "sparse"
+    }
+  },
+  {
+    "doc_id": "profile-core",
+    "text": "Gui e engenheiro de software/IA focado em construcao rapida e pratica.",
+    "metadata": {
+      "type": "fact"
+    },
+    "embedding": {
+      "vector": [
+        "gui",
+        "e",
+        "engenheiro",
+        "de",
+        "software/ia",
+        "focado",
+        "em",
+        "construcao",
+        "rapida",
+        "e",
+        "pratica."
+      ],
+      "kind": "sparse"
+    }
+  },
+  {
+    "doc_id": "style-pref",
+    "text": "Prefere respostas curtas, praticas e em portugues.",
+    "metadata": {
+      "type": "fact"
+    },
+    "embedding": {
+      "vector": [
+        "prefere",
+        "respostas",
+        "curtas,",
+        "praticas",
+        "e",
+        "em",
+        "portugues."
+      ],
+      "kind": "sparse"
+    }
+  },
+  {
+    "doc_id": "project-jarvez",
+    "text": "Projeto atual: Jarvez como Personal Operating System com skills, memoria, voz e automacao local.",
+    "metadata": {
+      "type": "fact"
+    },
+    "embedding": {
+      "vector": [
+        "projeto",
+        "atual:",
+        "jarvez",
+        "como",
+        "personal",
+        "operating",
+        "system",
+        "com",
+        "skills,",
+        "memoria,",
+        "voz",
+        "e",
+        "automacao",
+        "local."
+      ],
+      "kind": "sparse"
+    }
+  },
+  {
+    "doc_id": "goal-mid",
+    "text": "Objetivo de medio prazo: ter Jarvez respondendo sobre o Gui e tomando acoes com memoria persistente.",
+    "metadata": {
+      "type": "fact"
+    },
+    "embedding": {
+      "vector": [
+        "objetivo",
+        "de",
+        "medio",
+        "prazo:",
+        "ter",
+        "jarvez",
+        "respondendo",
+        "sobre",
+        "o",
+        "gui",
+        "e",
+        "tomando",
+        "acoes",
+        "com",
+        "memoria",
+        "persistente."
+      ],
+      "kind": "sparse"
+    }
+  }
+]

@@ -7,6 +7,7 @@ import threading
 from typing import Any, Dict, Set
 
 import websockets
+from dotenv import load_dotenv
 
 from jarvez.core.agent import Agent
 
@@ -21,6 +22,9 @@ Jarvez brain entrypoint:
 WS_HOST = "127.0.0.1"
 WS_PORT = 8787
 BROADCAST_HZ = 20  # 50 ms cadence
+
+# Load environment variables from .env early so downstream clients (OpenAI, etc.) are configured.
+load_dotenv()
 
 STATE: Dict[str, Any] = {
     "state": "idle",      # idle | listening | thinking | speaking | intense

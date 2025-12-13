@@ -16,7 +16,7 @@ def _load_store() -> Dict[str, List[Dict]]:
     if not PLANNER_PATH.exists():
         return {"plans": []}
     try:
-        return json.loads(PLANNER_PATH.read_text(encoding="utf-8"))
+        return json.loads(PLANNER_PATH.read_text(encoding="utf-8-sig"))
     except Exception as exc:
         logging.error("Failed to load planner store: %s", exc)
         return {"plans": []}

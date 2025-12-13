@@ -30,7 +30,7 @@ def transcribe_audio(path: str | Path, model: str = "whisper-1") -> str:
     try:
         # naive text fallback: attempt to read plain text files for dev stubs
         if path.suffix.lower() in {".txt"}:
-            return path.read_text(encoding="utf-8")
+            return path.read_text(encoding="utf-8-sig")
     except Exception as exc:
         logging.error("Fallback transcription failed: %s", exc)
 

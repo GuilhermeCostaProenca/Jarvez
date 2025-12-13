@@ -12,7 +12,7 @@ def _load() -> List[Dict]:
     if not TELEMETRY_PATH.exists():
         return []
     events: List[Dict] = []
-    with TELEMETRY_PATH.open("r", encoding="utf-8") as f:
+    with TELEMETRY_PATH.open("r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
             if not line:

@@ -33,7 +33,7 @@ def read_note(title: str) -> str:
     path = NOTES_DIR / f"{_slugify(name)}.txt"
     if not path.exists():
         return f"Note '{name}' not found"
-    content = path.read_text(encoding="utf-8")
+    content = path.read_text(encoding="utf-8-sig")
     logging.debug("Note read: %s (%s chars)", path.name, len(content))
     return content or f"Note '{name}' is empty"
 
@@ -45,7 +45,7 @@ def search_notes(keyword: str, limit: int = 5) -> List[str]:
 
     results: List[str] = []
     for file in sorted(NOTES_DIR.glob("*.txt")):
-        text = file.read_text(encoding="utf-8")
+        text = file.read_text(encoding="utf-8-sig")
         if term in text.lower() or term in file.stem.lower():
             snippet = text.strip().replace("\n", " ")
             if len(snippet) > 120:
@@ -59,7 +59,7 @@ def search_notes(keyword: str, limit: int = 5) -> List[str]:
 def get_note_summaries(limit: int = 3, snippet_chars: int = 120) -> List[str]:
     summaries: List[str] = []
     for file in sorted(NOTES_DIR.glob("*.txt"))[:limit]:
-        text = file.read_text(encoding="utf-8").strip().replace("\n", " ")
+        text = file.read_text(encoding="utf-8-sig").strip().replace("\n", " ")
         if len(text) > snippet_chars:
             text = text[: snippet_chars - 3] + "..."
         summaries.append(f"{file.stem}: {text}")

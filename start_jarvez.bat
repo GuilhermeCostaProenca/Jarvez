@@ -1,5 +1,6 @@
 @echo off
 setlocal
+cd /d "%~dp0"
 
 rem Activate venv if present
 if exist ".venv\Scripts\activate.bat" (

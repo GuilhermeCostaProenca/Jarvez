@@ -30,7 +30,7 @@ class VectorStore:
         if not self.path.exists():
             return
         try:
-            data = json.loads(self.path.read_text(encoding="utf-8"))
+            data = json.loads(self.path.read_text(encoding="utf-8-sig"))
             for item in data:
                 emb = Embedding(vector=item["embedding"]["vector"], kind=item["embedding"]["kind"])
                 self.docs[item["doc_id"]] = VectorDocument(
