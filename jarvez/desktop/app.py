@@ -16,10 +16,10 @@ from jarvez.config import load_config
 
 
 class JarvezRemoteClient:
-    def __init__(self, base_url: str, api_key: str):
+    def __init__(self, base_url: str, api_key: str, timeout: float = 8.0):
         self.base_url = base_url.rstrip("/")
         self.headers = {"X-API-Key": api_key}
-        self.client = httpx.Client(timeout=30)
+        self.client = httpx.Client(timeout=timeout)
 
     def chat(self, message: str, mode: str | None = None, extra_context: dict | None = None) -> dict:
         payload = {"message": message, "mode": mode, "debug": True}
@@ -60,27 +60,22 @@ class DesktopApp(QtWidgets.QApplication):
             self.panel.show()
 
     def send_message(self, text: str):
-        try:
-            self.orb.set_state("talk")
-            data = self.client.chat(text)
-            self.panel.append_message("jarvez", data.get("reply", ""))
-        except Exception as exc:
-            self.panel.append_message("error", str(exc))
-        finally:
-            self.orb.set_state("idle")
+        self.orb.set_state("talk")
+        threading.Thread(target=self._send_chat, args=(text, None), daemon=True).start()
 
     def send_proactive(self, text: str, ctx: dict):
-        QtCore.QTimer.singleShot(0, lambda: self._send_proactive_impl(text, ctx))
+        QtCore.QTimer.singleShot(0, lambda: self.orb.set_state("talk"))
+        threading.Thread(target=self._send_chat, args=(text, ctx), daemon=True).start()
 
-    def _send_proactive_impl(self, text: str, ctx: dict):
+    def _send_chat(self, text: str, ctx: dict | None):
         try:
-            self.orb.set_state("talk")
-            data = self.client.chat(text, mode=ctx.get("awareness", {}).get("context"))
-            self.panel.append_message("jarvez", data.get("reply", ""))
+            mode = ctx.get("awareness", {}).get("context") if ctx else None
+            data = self.client.chat(text, mode=mode, extra_context=ctx)
+            reply = data.get("reply", "")
         except Exception as exc:
-            self.panel.append_message("error", f"proactive failed: {exc}")
-        finally:
-            self.orb.set_state("idle")
+            reply = f"[erro] {exc}"
+        QtCore.QTimer.singleShot(0, lambda: self.panel.append_message("jarvez", reply))
+        QtCore.QTimer.singleShot(0, lambda: self.orb.set_state("idle"))
 
     def on_context_change(self, context: dict):
         QtCore.QTimer.singleShot(0, lambda: self.awareness_bridge.on_context_change(context))

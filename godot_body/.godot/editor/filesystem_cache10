@@ -1,0 +1,12 @@
+63f7b34db8d8cdea90c76aacccf841ec
+::res://::1765584344
+node_3d.tscn::PackedScene::3600114723302628274::1765584173::0::1::::<><><>0<>0<><>::
+::res://scenes/::1765584290
+default_env.tres::Environment::189557694829735::1765584290::0::1::::<><><>0<>0<><>::
+Orb.tscn::PackedScene::761658150238::1765584139::0::1::::<><><>0<>0<><>::uid://bwh2yyk65883l::::res://shaders/orb_energy.gdshader<>uid://b2nolp1h4wprt::::res://shaders/ring_distortion.gdshader<>uid://d1obb20fnitk1::::res://scripts/orb_controller.gd<>uid://c01m2oivqfaxi::::res://scripts/state_bus.gd<>uid://defaultenv::::res://scenes/default_env.tres
+::res://scripts/::1765584110
+orb_controller.gd::GDScript::9013137234007103914::1765577986::0::1::::<>Node3D<><>0<>0<><>::
+state_bus.gd::GDScript::6582013848952255582::1765577982::0::1::::<>Node<><>0<>0<><>::
+::res://shaders/::1765584110
+orb_energy.gdshader::Shader::3946709383325015951::1765576533::0::1::::<><><>0<>0<><>::
+ring_distortion.gdshader::Shader::4309226882727288177::1765576547::0::1::::<><><>0<>0<><>::

@@ -1,0 +1,12 @@
+[gd_resource type="Environment" format=3 uid="uid://defaultenv"]
+
+[resource]
+background_mode = 1
+background_color = Color(0.02, 0.04, 0.07, 1)
+ssao_enabled = true
+ssao_intensity = 0.4
+glow_enabled = true
+glow_intensity = 1.2
+glow_strength = 1.2
+glow_blend_mode = 0
+glow_hdr_threshold = 0.7

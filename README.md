@@ -15,12 +15,25 @@ Jarvez is a personal OS style assistant for Guilherme. v0.9 adds a Desktop Orb c
 - API key required on critical routes (/chat, /plan, /automation/run, /events, /push/send).
 - Home Assistant webhooks (`ha.*` actions) and /events ingestion.
 
-## Desktop Orb (v0.9)
+## Desktop Orb (v0.9) [LEGACY]
 - PySide6 orb widget (always-on-top, circular, idle/talk states, mood-ready colors).
 - Chat panel anchored to orb; talks to cloud `/chat` via API key.
 - Awareness loop (Windows-friendly) detects active app/title, VSCode, browser, YouTube, idle; emits context changes.
 - Awareness bridge sends proactive prompts to Jarvez Cloud (rate-limited) and shows replies in the panel.
 - Entry: `python -m jarvez.desktop.app` (set `JARVEZ_API_URL`, `JARVEZ_API_KEY`).
+- Status: legacy; superseded by the Godot 3D body.
+
+## New 3D Body (Godot 4, replacing the PySide orb)
+- Folder `godot_body/` is a Godot 4 project; main scene `scenes/Orb.tscn` renders the energy core + rings + particles at 60 fps.
+- Shaders: `shaders/orb_energy.gdshader` (core emissive) and `shaders/ring_distortion.gdshader` (rings/filaments).
+- Scripts: `scripts/state_bus.gd` (WebSocket client to `ws://127.0.0.1:8787`) and `scripts/orb_controller.gd` (state-driven visuals, mouse drag/scroll, proximity distortion).
+- Run: open `godot_body/project.godot` in Godot 4.x on Windows and press Play. Send JSON over WS like `{"state":"thinking","intensity":0.8,"mood":"calm"}`; the orb responds live.
+
+## One-click start (brain + body)
+- `start_jarvez.bat` (root) boots the Python brain (`jarvez/brain.py`, WebSocket at `ws://127.0.0.1:8787`) and then starts the exported Godot body at `godot_body\bin\JarvezOrb.exe`.
+- Ensure `.venv` exists with `pip install -r requirements.txt`. Place the Godot export as `godot_body\bin\JarvezOrb.exe` (export preset: Windows Desktop).
+- Double-click `start_jarvez.bat` to launch; no terminals required (batch minimizes the brain).
+- To auto-start on Windows: create a shortcut to `start_jarvez.bat` in `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`.
 
 ## Presence & Events
 - `/events` accepts external events (mobile/HA) and returns presence hints; presence module maps location/presence to suggested modes (home/work/fiap → focus/study).

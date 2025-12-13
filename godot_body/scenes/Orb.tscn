@@ -1,0 +1,96 @@
+[gd_scene load_steps=11 format=3 uid="uid://orbscene"]
+
+[ext_resource type="Shader" uid="uid://bwh2yyk65883l" path="res://shaders/orb_energy.gdshader" id="1"]
+[ext_resource type="Shader" uid="uid://b2nolp1h4wprt" path="res://shaders/ring_distortion.gdshader" id="2"]
+[ext_resource type="Script" uid="uid://d1obb20fnitk1" path="res://scripts/orb_controller.gd" id="3"]
+[ext_resource type="Script" uid="uid://c01m2oivqfaxi" path="res://scripts/state_bus.gd" id="4"]
+[ext_resource type="Environment" uid="uid://defaultenv" path="res://scenes/default_env.tres" id="5"]
+
+[sub_resource type="ShaderMaterial" id="2"]
+render_priority = 0
+shader = ExtResource("1")
+
+[sub_resource type="SphereMesh" id="1"]
+rings = 48
+
+[sub_resource type="ShaderMaterial" id="4"]
+render_priority = 0
+shader = ExtResource("2")
+shader_parameter/base_color = Color(0.25, 0.7, 1, 0.85)
+shader_parameter/intensity = 0.6
+shader_parameter/distortion = 0.15
+shader_parameter/noise_scale = 1.6
+shader_parameter/time_scale = 1.0
+shader_parameter/mouse_push = 0.0
+
+[sub_resource type="TorusMesh" id="3"]
+inner_radius = 0.65
+outer_radius = 0.95
+
+[sub_resource type="ParticleProcessMaterial" id="6"]
+emission_shape = 2
+emission_sphere_radius = 0.8
+direction = Vector3(0, 0, 0)
+spread = 180.0
+initial_velocity_min = 1.4
+initial_velocity_max = 2.4
+angular_velocity_min = 0.5
+angular_velocity_max = 1.5
+orbit_velocity_max = 1.0
+gravity = Vector3(0, 0, 0)
+radial_accel_min = -0.5
+radial_accel_max = 0.5
+damping_min = 0.12
+damping_max = 0.35
+scale_min = 0.04
+scale_max = 0.08
+color = Color(0.45, 0.9, 1, 0.75)
+
+[node name="OrbRoot" type="Node3D"]
+script = ExtResource("3")
+core_mesh_path = NodePath("Core")
+ring_mesh_path = NodePath("Ring")
+particles_path = NodePath("Sparks")
+camera_path = NodePath("Camera3D")
+debug_label_path = NodePath("Debug/Label")
+
+[node name="StateBus" type="Node" parent="."]
+script = ExtResource("4")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 6)
+fov = 52.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("5")
+
+[node name="Light" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.902585, 0, 0.430511, -0.17101, 0.852869, 0.492404, -0.394338, -0.522499, 0.755297, 0, 0, 0)
+light_energy = 3.0
+light_indirect_energy = 1.2
+
+[node name="Core" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.031608462, 0.0061616898, 0.023297787)
+material_override = SubResource("2")
+mesh = SubResource("1")
+
+[node name="Ring" type="MeshInstance3D" parent="."]
+material_override = SubResource("4")
+mesh = SubResource("3")
+
+[node name="Sparks" type="GPUParticles3D" parent="."]
+amount = 650
+lifetime = 1.8
+preprocess = 0.4
+explosiveness = 0.2
+randomness = 0.4
+fixed_fps = 60
+process_material = SubResource("6")
+
+[node name="Debug" type="CanvasLayer" parent="."]
+
+[node name="Label" type="Label" parent="Debug"]
+offset_left = 8.0
+offset_top = 8.0
+theme_type_variation = &"Label"
+text = "state: idle | intensity: 0.50"

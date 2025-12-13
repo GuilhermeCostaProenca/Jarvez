@@ -1,0 +1,25 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="JarvezBody"
+run/main_scene="res://scenes/Orb.tscn"
+config/features=PackedStringArray("4.5")
+
+[display]
+
+window/stretch/mode="canvas_items"
+window/vsync/use_vsync=true
+
+[rendering]
+
+environment/defaults/default_environment="res://scenes/default_env.tres"
+environment/glow/enabled=true

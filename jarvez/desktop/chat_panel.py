@@ -1,50 +1,39 @@
-import os
-import json
-import httpx
+from __future__ import annotations
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
 
 class ChatPanel(QtWidgets.QWidget):
-    def __init__(self):
+    send_message = QtCore.Signal(str)
+
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Jarvez")
+        self.setWindowFlags(QtCore.Qt.Tool | QtCore.Qt.FramelessWindowHint)
 
         self.layout = QtWidgets.QVBoxLayout(self)
 
         self.output = QtWidgets.QTextEdit()
         self.output.setReadOnly(True)
+        self.output.setMinimumWidth(320)
+        self.output.setPlaceholderText("Jarvez pronto...")
 
         self.input = QtWidgets.QLineEdit()
-        self.input.returnPressed.connect(self.send_message)
+        self.input.setPlaceholderText("Fala comigo...")
+        self.input.returnPressed.connect(self._emit_message)
 
         self.layout.addWidget(self.output)
         self.layout.addWidget(self.input)
 
-        self.api_url = os.getenv("JARVEZ_API_URL")
-        self.api_key = os.getenv("JARVEZ_API_KEY")
-
-    def send_message(self):
+    def _emit_message(self) -> None:
         text = self.input.text().strip()
         if not text:
             return
-
-        self.output.append(f"Você: {text}")
-
+        self.append_message("you", text)
         self.input.clear()
+        self.send_message.emit(text)
 
-        # Envia para o Jarvez Cloud
-        try:
-            resp = httpx.post(
-                f"{self.api_url}/chat",
-                headers={"X-API-Key": self.api_key},
-                json={"message": text, "mode": "system"},
-                timeout=20
-            )
-
-            data = resp.json()
-            reply = data.get("reply", "[sem resposta]")
-        except Exception as e:
-            reply = f"[erro] {e}"
-
-        self.output.append(f"Jarvez: {reply}\n")
+    def append_message(self, sender: str, text: str) -> None:
+        prefix = "You" if sender in {"you", "me", "user"} else sender.capitalize()
+        self.output.append(f"{prefix}: {text}")
+        self.output.moveCursor(QtGui.QTextCursor.End)
