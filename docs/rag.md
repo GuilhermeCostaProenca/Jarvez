@@ -2,14 +2,14 @@
 
 ## Components
 - `rag/embedder.py`: OpenAI embeddings with sparse token fallback.
-- `rag/vector_store.py`: JSON-backed store (`data/rag_index.json`) that supports dense cosine or sparse jaccard.
+- `rag/vector_store.py`: SQLite-backed store (`jarvez.db:rag_chunks`) with dense cosine or sparse jaccard.
 - `rag/retriever.py`: indexing helpers and retrieval of top-k chunks.
 
 ## Indexed sources
-- Notes (`data/notes/*.txt` full text).
-- Static facts (`memory.json:facts`).
-- Dynamic facts (`memory.json:dynamic_facts` captured at runtime).
-- Plans (`data/planner.json` via planner skill and orchestrator).
+- Notes (`jarvez.db:notes` full text).
+- Static facts (`memories.section='facts'`).
+- Dynamic facts (`memories.section='dynamic_facts'` capturados em runtime).
+- Plans (`jarvez.db:plans` via planner skill e orchestrator).
 - Vision-ingested text (screen summaries, camera snapshots, PDFs ingested).
 - Journal entries (text + mood-tagged) when retriever is available.
 
@@ -20,7 +20,7 @@
 
 ## Configuration
 - Uses `OPENAI_API_KEY` for embeddings when available; otherwise sparse fallback.
-- Store location: `data/rag_index.json`.
+- Store location: `data/jarvez.db` (env `JARVEZ_DB_PATH` opcional).
 
 ## Extensibility
 - Swap vector_store implementation for FAISS/SQLite without changing retriever API.

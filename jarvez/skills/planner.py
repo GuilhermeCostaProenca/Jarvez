@@ -1,29 +1,13 @@
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from jarvez.skills import notes
+from jarvez.storage.db import JarvezDatabase
 
-PLANNER_PATH = Path(__file__).resolve().parents[2] / "data" / "planner.json"
-PLANNER_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-
-def _load_store() -> Dict[str, List[Dict]]:
-    if not PLANNER_PATH.exists():
-        return {"plans": []}
-    try:
-        return json.loads(PLANNER_PATH.read_text(encoding="utf-8-sig"))
-    except Exception as exc:
-        logging.error("Failed to load planner store: %s", exc)
-        return {"plans": []}
-
-
-def _save_store(data: Dict[str, List[Dict]]) -> None:
-    PLANNER_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+DB = JarvezDatabase()
 
 
 def _default_steps(goal: str) -> List[str]:
@@ -67,9 +51,7 @@ def plan_goal(goal_text: str, deadline: Optional[str] = None, auto_note: bool = 
         "status": "open",
     }
 
-    store = _load_store()
-    store.setdefault("plans", []).append(plan)
-    _save_store(store)
+    DB.upsert_plan(plan_id, goal=goal, deadline=deadline, steps=steps, status="open", created_at=plan["created_at"], updated_at=plan["created_at"])
 
     note_msg = ""
     if auto_note:
@@ -87,8 +69,7 @@ def plan_goal(goal_text: str, deadline: Optional[str] = None, auto_note: bool = 
 
 
 def follow_up(goal_filter: Optional[str] = None) -> str:
-    store = _load_store()
-    plans = store.get("plans", [])
+    plans = DB.list_plans()
     if goal_filter:
         plans = [p for p in plans if goal_filter.lower() in p.get("goal", "").lower()]
 
@@ -102,5 +83,4 @@ def follow_up(goal_filter: Optional[str] = None) -> str:
 
 
 def get_plans() -> List[Dict[str, Any]]:
-    store = _load_store()
-    return store.get("plans", [])
+    return DB.list_plans()

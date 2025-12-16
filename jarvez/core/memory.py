@@ -3,50 +3,55 @@
 import json
 import logging
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-DEFAULT_MEMORY_PATH = Path(__file__).resolve().parents[2] / "data" / "memory.json"
+from jarvez.storage.db import JarvezDatabase, _utcnow
 
 
 class MemoryStore:
-    """JSON-backed memory store supporting simple importance detection and profiling."""
+    """SQLite-backed memory store supporting importance detection and profiling."""
 
-    def __init__(self, path: Path | str = DEFAULT_MEMORY_PATH):
-        self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._data: Dict[str, Any] = {"user": {}, "facts": [], "dynamic_facts": [], "state": {}}
-        self._load()
+    def __init__(self, db: JarvezDatabase | None = None):
+        self.db = db or JarvezDatabase()
 
-    def _load(self) -> None:
-        if self.path.exists():
+    def _load(self) -> Dict[str, Any]:
+        # Reconstruct a structure close to the legacy JSON for backward compatibility
+        memories = self.db.search_memories(limit=500)
+        facts = [m for m in memories if m.get("section") == "facts"]
+        dynamics = [m for m in memories if m.get("section") == "dynamic_facts"]
+        user_profile = self.db.get_setting("user_profile")
+        user_data = {}
+        if user_profile:
             try:
-                self._data = json.loads(self.path.read_text(encoding="utf-8-sig"))
-            except Exception as exc:
-                logging.error("Failed to load memory file: %s", exc)
-                self._data = {"facts": []}
-        else:
-            self.save_memory()
-        self._ensure_structure()
-
-    def _ensure_structure(self) -> None:
-        self._data.setdefault("user", {})
-        self._data.setdefault("facts", [])
-        self._data.setdefault("dynamic_facts", [])
-        state = self._data.setdefault("state", {})
-        state.setdefault("last_mode", "system")
+                user_data = json.loads(user_profile)
+            except Exception:
+                user_data = {}
+        last_mode = self.db.get_setting("last_mode") or "system"
+        return {"user": user_data, "facts": facts, "dynamic_facts": dynamics, "state": {"last_mode": last_mode}}
 
     def get_memory(self) -> Dict[str, Any]:
-        return self._data
+        return self._load()
 
-    def save_memory(self) -> None:
-        self.path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
+    def save_memory(self) -> None:  # pragma: no cover - kept for API compatibility
+        # No-op because persistence happens on each insert.
+        return
 
     def update_memory(self, entry: Dict[str, Any], section: str = "facts") -> Dict[str, Any]:
-        entry.setdefault("timestamp", datetime.utcnow().isoformat() + "Z")
-        bucket = self._data.setdefault(section, [])
-        bucket.append(entry)
-        self.save_memory()
+        entry.setdefault("timestamp", _utcnow())
+        mem_id = entry.get("id") or f"mem-{int(datetime.utcnow().timestamp())}"
+        tags = entry.get("tags", [])
+        self.db.upsert_memory(
+            mem_id,
+            text=entry.get("content", ""),
+            tags=tags,
+            importance=entry.get("importance"),
+            source=entry.get("source"),
+            created_at=entry.get("timestamp"),
+            expires_at=entry.get("expires_at"),
+            privacy_level=entry.get("privacy_level"),
+            section=section,
+            metadata={k: v for k, v in entry.items() if k not in {"id", "content", "tags", "timestamp", "expires_at"}},
+        )
         logging.debug("Memory updated in section '%s': %s", section, entry.get("content", "")[:120])
         return entry
 
@@ -92,23 +97,21 @@ class MemoryStore:
         return [entry]
 
     def relevant_facts(self, limit: int = 5) -> List[str]:
-        facts = list(self._data.get("facts", [])) + list(self._data.get("dynamic_facts", []))
-        ordered = list(reversed(facts))
-        return [fact.get("content", "") for fact in ordered[:limit] if fact.get("content")]
+        memories = self.db.search_memories(limit=limit * 2)
+        ordered = list(memories)
+        return [fact.get("text", "") for fact in ordered[:limit] if fact.get("text")]
 
     def get_last_mode(self) -> str:
-        state = self._data.get("state", {})
-        return state.get("last_mode", "system")
+        return self.db.get_setting("last_mode") or "system"
 
     def set_last_mode(self, mode: str) -> None:
-        self._data.setdefault("state", {})["last_mode"] = mode
-        self.save_memory()
+        self.db.upsert_setting("last_mode", mode)
 
     def dynamic_documents(self) -> List[Dict[str, Any]]:
-        return list(self._data.get("dynamic_facts", []))
+        return [m for m in self.db.search_memories(section="dynamic_facts", limit=20)]
 
     def describe_user(self) -> str:
-        user = self._data.get("user", {})
+        user = self.get_memory().get("user", {})
         name = user.get("name", "Gui")
         language = user.get("language", "pt-BR")
         timezone = user.get("timezone", "America/Sao_Paulo")
@@ -122,17 +125,19 @@ class MemoryStore:
         )
 
     def describe_projects(self) -> str:
-        projects = [f["content"] for f in self._data.get("facts", []) if f.get("type") == "project" and f.get("content")]
+        data = self.get_memory()
+        projects = [f["text"] for f in data.get("facts", []) if f.get("metadata", {}).get("type") == "project" and f.get("text")]
         if not projects:
             return "Sem projetos registrados."
         return "Projetos ativos: " + "; ".join(projects)
 
     def describe_goals(self) -> str:
-        user_goals = self._data.get("user", {}).get("goals", [])
+        data = self.get_memory()
+        user_goals = data.get("user", {}).get("goals", [])
         dynamic_goals = [
-            f["content"]
-            for f in self._data.get("dynamic_facts", [])
-            if ("goal" in f.get("tags", []) or f.get("type") == "goal") and f.get("content")
+            f["text"]
+            for f in data.get("dynamic_facts", [])
+            if ("goal" in (f.get("tags") or []) or f.get("metadata", {}).get("type") == "goal") and f.get("text")
         ]
         all_goals = list(user_goals) + dynamic_goals
         if not all_goals:
@@ -157,7 +162,8 @@ class MemoryStore:
         return None
 
     def system_context(self, note_summaries: Optional[List[str]] = None, dynamic_limit: int = 3) -> str:
-        user = self._data.get("user", {})
+        data = self.get_memory()
+        user = data.get("user", {})
         name = user.get("name", "Guilherme")
         language = user.get("language", "pt-BR")
         timezone = user.get("timezone", "America/Sao_Paulo")
@@ -165,13 +171,17 @@ class MemoryStore:
         goals = user.get("goals", [])
 
         static_projects = [
-            f["content"] for f in self._data.get("facts", []) if f.get("type") == "project" and f.get("content")
+            f.get("text")
+            for f in data.get("facts", [])
+            if f.get("metadata", {}).get("type") == "project" and f.get("text")
         ]
         preferences = [
-            f["content"] for f in self._data.get("facts", []) if f.get("type") == "preference" and f.get("content")
+            f.get("text")
+            for f in data.get("facts", [])
+            if f.get("metadata", {}).get("type") == "preference" and f.get("text")
         ]
-        dynamic = list(reversed(self._data.get("dynamic_facts", [])))[:dynamic_limit]
-        dynamic_texts = [item.get("content", "") for item in dynamic if item.get("content")]
+        dynamic = list(reversed(data.get("dynamic_facts", [])))[:dynamic_limit]
+        dynamic_texts = [item.get("text", "") for item in dynamic if item.get("text")]
 
         note_lines = note_summaries or []
 

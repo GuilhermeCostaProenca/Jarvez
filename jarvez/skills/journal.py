@@ -1,37 +1,22 @@
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, List
 
 from jarvez.mood import detector
 from jarvez.mood.store import MoodStore
 from jarvez.rag.retriever import Retriever
+from jarvez.storage.db import JarvezDatabase
 
-JOURNAL_DIR = Path(__file__).resolve().parents[2] / "data" / "journal"
-JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _journal_path() -> Path:
-    return JOURNAL_DIR / f"{datetime.utcnow().date().isoformat()}.json"
+DB = JarvezDatabase()
 
 
 def create_entry(text: str, retriever: Retriever | None = None, mood_store: MoodStore | None = None) -> str:
-    entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "text": text.strip(),
-    }
-    path = _journal_path()
-    data: List[Dict] = []
-    if path.exists():
-        try:
-            data = json.loads(path.read_text(encoding="utf-8-sig"))
-        except Exception:
-            data = []
-    data.append(entry)
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    entry_id = f"journal-{int(datetime.utcnow().timestamp())}"
+    timestamp = datetime.utcnow().isoformat() + "Z"
+    text_clean = text.strip()
+    DB.add_journal_entry(entry_id, content=text_clean, created_at=timestamp)
 
     mood_trace = detector.detect_mood(text)
     if mood_store:
@@ -47,23 +32,12 @@ def create_entry(text: str, retriever: Retriever | None = None, mood_store: Mood
         except Exception as exc:
             logging.debug("Failed to index journal entry: %s", exc)
 
-    return f"Journal registrado em {path.name}"
+    return "Journal registrado"
 
 
 def summarize(period: str = "week") -> str:
-    files = sorted(JOURNAL_DIR.glob("*.json"))
-    if not files:
-        return "Nenhum journal registrado."
-    # naive: read recent files
-    recent_files = files[-7:] if period == "week" else files[-30:]
-    texts: List[str] = []
-    for file in recent_files:
-        try:
-            entries = json.loads(file.read_text(encoding="utf-8-sig"))
-            for e in entries:
-                texts.append(e.get("text", ""))
-        except Exception:
-            continue
+    entries = DB.list_journal_entries(limit=30 if period == "month" else 7)
+    texts: List[str] = [e.get("content", "") for e in entries]
     if not texts:
         return "Nenhum journal registrado."
     # simple heuristic summary stub

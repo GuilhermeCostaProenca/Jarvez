@@ -10,15 +10,10 @@ BACKUP_DIR = Path(__file__).resolve().parents[2] / "backups"
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 DATA_FILES = [
-    "data/memory.json",
-    "data/planner.json",
-    "data/rag_index.json",
-    "data/mood_trace.json",
+    "data/jarvez.db",
 ]
 
 DATA_DIRS = [
-    "data/journal",
-    "data/notes",
     "data/captures",
 ]
 
@@ -30,7 +25,7 @@ def _existing_path(rel_path: str) -> Path | None:
 
 def create_backup() -> Path:
     timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    folder = BACKUP_DIR / f"backup-{timestamp}-v0.7"
+    folder = BACKUP_DIR / f"backup-{timestamp}-v1.0"
     folder.mkdir(parents=True, exist_ok=True)
 
     for rel in DATA_FILES:

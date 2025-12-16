@@ -2,33 +2,16 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
-from jarvez.telemetry.logger import TELEMETRY_PATH
+from jarvez.storage.db import JarvezDatabase
 
-
-def _load() -> List[Dict]:
-    if not TELEMETRY_PATH.exists():
-        return []
-    events: List[Dict] = []
-    with TELEMETRY_PATH.open("r", encoding="utf-8-sig") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                events.append(json.loads(line))
-            except Exception:
-                continue
-    return events
+DB = JarvezDatabase()
 
 
 def recent(limit: int = 50, event_type: Optional[str] = None) -> List[Dict]:
-    events = _load()
-    if event_type:
-        events = [e for e in events if e.get("type") == event_type]
-    return events[-limit:]
+    events = DB.recent_events(limit=limit, event_type=event_type)
+    return events
 
 
 def filter_events(
@@ -37,16 +20,14 @@ def filter_events(
     event_type: Optional[str] = None,
     mode: Optional[str] = None,
 ) -> List[Dict]:
-    events = _load()
+    events = DB.recent_events(limit=500, event_type=event_type)
     results: List[Dict] = []
     start_dt = datetime.fromisoformat(start.replace("Z", "+00:00")) if start else None
     end_dt = datetime.fromisoformat(end.replace("Z", "+00:00")) if end else None
     for e in events:
-        if event_type and e.get("type") != event_type:
-            continue
         if mode and e.get("payload", {}).get("mode") != mode:
             continue
-        ts = e.get("ts")
+        ts = e.get("created_at")
         if ts:
             try:
                 ts_dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
