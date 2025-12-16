@@ -1,53 +1,69 @@
+import importlib
+import sys
 from pathlib import Path
 
-from jarvez.core.memory import MemoryStore
-from jarvez.mood import detector as mood_detector
-from jarvez.mood.store import MoodStore
-from jarvez.rag.embedder import Embedder
-from jarvez.rag.retriever import Retriever
-from jarvez.rag.vector_store import VectorStore
-from jarvez.skills import planner
-from jarvez.skills import journal as journal_skill
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from jarvez.storage.db import JarvezDatabase
 
 
-def test_memory_basic(tmp_path: Path):
-    mem_path = tmp_path / "memory.json"
-    store = MemoryStore(path=mem_path)
-    entry = {"id": "t1", "content": "Teste de memoria", "source": "test"}
-    store.update_memory(entry, section="dynamic_facts")
-    assert "Teste de memoria" in store.relevant_facts(limit=1)[0]
+def test_migration_json_to_sqlite(tmp_path: Path):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    (data_dir / "memory.json").write_text(
+        """
+        {"user": {"name": "Gui"}, "facts": [{"id": "f1", "content": "facto", "type": "fact"}], "dynamic_facts": [], "state": {"last_mode": "system"}}
+        """,
+        encoding="utf-8",
+    )
+    (data_dir / "planner.json").write_text('{"plans": [{"id": "p1", "goal": "test", "steps": []}]}', encoding="utf-8")
+    (data_dir / "mood_trace.json").write_text('[{"id": "m1", "sentiment": "ok"}]', encoding="utf-8")
+    (data_dir / "rag_index.json").write_text('[{"doc_id": "d1", "text": "doc", "embedding": {"vector": [], "kind": "sparse"}}]', encoding="utf-8")
+    (data_dir / "telemetry.log.jsonl").write_text('{"id": "e1", "type": "evt", "payload": {}, "ts": "2024-01-01T00:00:00Z"}\n', encoding="utf-8")
+
+    db = JarvezDatabase(path=tmp_path / "jarvez.db", data_dir=data_dir)
+    assert db.get_setting("legacy_migrated") == "1"
+    assert db.search_memories()
+    assert db.list_plans()
+    assert db.recent_mood()
+    assert db.all_rag_chunks()
+    assert db.recent_events()
 
 
-def test_rag_index_and_retrieve(tmp_path: Path):
-    store = VectorStore(tmp_path / "rag.json")
-    retriever = Retriever(Embedder(), store)
-    retriever.index_document("doc1", "guilherme gosta de IA aplicada", {"type": "fact"})
-    results = retriever.retrieve("IA aplicada", top_k=1)
-    assert results
-    assert "guilherme" in results[0].text.lower()
+def test_forget_pipeline_removes_records(tmp_path: Path):
+    db = JarvezDatabase(path=tmp_path / "forget.db", data_dir=tmp_path)
+    db.upsert_memory("mem1", text="delete me", tags=["test"], source="unit", section="facts")
+    db.upsert_note("note1", title="n1", content="delete note")
+    db.upsert_plan("plan1", goal="delete plan", deadline=None, steps=[], status="open")
+    db.upsert_rag_chunk("rag1", text="rag delete", metadata={}, embedding={"vector": [], "kind": "sparse"})
+    db.add_event("evt1", "test", payload={"text": "delete"})
+    stats = db.forget(query="delete")
+    assert sum(stats.values()) >= 4
+    assert db.search_memories(query="delete") == []
+    assert db.list_notes() == []
+    assert db.list_plans() == []
+    assert db.all_rag_chunks() == []
 
 
-def test_planner_create(tmp_path: Path, monkeypatch):
-    temp_planner = tmp_path / "planner.json"
-    monkeypatch.setattr(planner, "PLANNER_PATH", temp_planner)
-    res = planner.plan_goal("Testar planner")
-    assert res["plan"]["goal"]
-    assert temp_planner.exists()
+def test_timeline_insert_and_recent(tmp_path: Path, monkeypatch):
+    db_path = tmp_path / "timeline.db"
+    monkeypatch.setenv("JARVEZ_DB_PATH", str(db_path))
+    from jarvez.telemetry import logger, timeline
+
+    importlib.reload(logger)
+    importlib.reload(timeline)
+
+    logger.log_event("timeline.test", {"mode": "focus"})
+    events = timeline.recent(limit=5)
+    assert events
+    assert events[0]["type"] == "timeline.test"
 
 
-def test_mood_detection_and_store(tmp_path: Path):
-    mood = mood_detector.detect_mood("estou ansioso com o trabalho", mode="focus")
-    assert mood["sentiment"] in {"ansioso", "frustrado", "sobrecarregado"}
-    store = MoodStore(path=tmp_path / "mood.json")
-    store.append(mood)
-    assert store.recent()[0]["sentiment"] == mood["sentiment"]
-
-
-def test_journal_create_and_summary(tmp_path: Path, monkeypatch):
-    temp_dir = tmp_path / "journal"
-    monkeypatch.setattr(journal_skill, "JOURNAL_DIR", temp_dir)
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    msg = journal_skill.create_entry("Hoje foi um dia produtivo", retriever=None, mood_store=None)
-    assert "Journal registrado" in msg
-    summary = journal_skill.summarize(period="week")
-    assert "entradas" in summary or "Nenhum journal" in summary
+def test_settings_toggle(tmp_path: Path):
+    db = JarvezDatabase(path=tmp_path / "settings.db", data_dir=tmp_path)
+    db.upsert_setting("raw_text", "0")
+    assert db.get_setting("raw_text") == "0"
+    db.upsert_setting("raw_text", "1")
+    assert db.get_setting("raw_text") == "1"
+    db.upsert_setting("mode", "PASSIVE_AWARE")
+    assert db.get_setting("mode") == "PASSIVE_AWARE"

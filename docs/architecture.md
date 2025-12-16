@@ -44,11 +44,11 @@ CLI/Voice/API/Orb -> Agent -> Orchestrator -> { Skills | RAG | Memory | Automati
 7. Desktop awareness loop can proactively call /chat with context and render in orb UI.
 
 ## Memory strategy
-- Seed memory lives in data/memory.json with user profile, projetos, objetivos, preferencias, state.last_mode.
-- detect_important() adds long/keyword-tagged text as dynamic facts; stored + indexed in RAG.
-- answer_from_memory() returns profile/projects/goals directly when asked.
-- system_context() composes profile + objetivos + preferencias + memorias dinamicas + note summaries for every LLM call.
-- relevant_facts() surfaces recent static+dynamic facts (last N) into prompts.
+- Seed memory agora vive em SQLite (`jarvez.db:memories/settings`) com perfil, projetos, objetivos, preferencias, state.last_mode.
+- detect_important() adiciona texto longo/keyword como dynamic facts; armazenado em SQLite e indexado no RAG.
+- answer_from_memory() retorna perfil/projetos/objetivos direto quando perguntado.
+- system_context() compoe perfil + objetivos + preferencias + memorias dinamicas + resumos de notas em cada chamada de LLM.
+- relevant_facts() traz estaticos+dynamics recentes (ultimo N) para os prompts.
 
 ## RAG strategy
 - Indexes: notes (full text), static facts, dynamic facts, and plans.
@@ -61,8 +61,8 @@ CLI/Voice/API/Orb -> Agent -> Orchestrator -> { Skills | RAG | Memory | Automati
 - Mode can be changed by user command (`modo foco`, `mode study`) or via API payload, persisted in memory.state.last_mode, and reflected in system prompt. Suggestions surface workflows on switch.
 
 ## Planner strategy
-- Planner skill produces steps, saves plan to `data/planner.json`, and creates a note.
-- Plans are indexed into RAG; important plan metadata is added to dynamic memory.
+- Planner skill produz passos, salva em SQLite (`jarvez.db:plans`) e cria uma nota.
+- Plans sao indexados no RAG; metadados importantes viram dynamic memory.
 - Multi-step detection in the orchestrator routes to planner when a pipeline is implied.
 - API `/plan` also creates plans via the same path.
 
@@ -81,12 +81,12 @@ CLI/Voice/API/Orb -> Agent -> Orchestrator -> { Skills | RAG | Memory | Automati
 - Personality + mood + mode merged into system prompt instructions.
 
 ## Mood strategy
-- Heuristic detector per input; traces saved to `data/mood_trace.json`.
+- Heuristic detector per input; traces saved to SQLite (`jarvez.db:mood_trace`).
 - Mood summary injected into prompts; exposed in API/CLI debug.
 - Future: use traces for planner weighting and journaling insights.
 
 ## Journal strategy
-- Journal entries saved daily, mood-tagged, indexed into RAG.
+- Journal entries saved in SQLite (`jarvez.db:journal_entries`), mood-tagged, indexed into RAG.
 - Summaries (stub) for week/month; life_coach mode can encourage journaling when moods are strong.
 
 ## Extensibility targets

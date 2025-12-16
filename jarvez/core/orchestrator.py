@@ -2,7 +2,6 @@
 
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from jarvez.modes import get_mode, list_modes
@@ -17,6 +16,7 @@ from jarvez.mood.store import MoodStore
 from jarvez.vision import pipelines as vision_pipelines
 from jarvez.config import load_config
 from jarvez.telemetry.logger import log_event
+from jarvez.storage.db import JarvezDatabase
 
 from .llm_client import LLMClient
 from .memory import MemoryStore
@@ -54,39 +54,39 @@ class Orchestrator:
         self.llm_client = llm_client
         self.memory_store = memory_store
         self.skill_registry = skill_registry
-        self.mood_store = MoodStore()
+        self.db = JarvezDatabase()
+        self.mood_store = MoodStore(self.db)
 
         self.current_mode = get_mode(default_mode or self.memory_store.get_last_mode())
         self.memory_store.set_last_mode(self.current_mode.name)
 
-        self.rag_store_path = Path(__file__).resolve().parents[2] / "data" / "rag_index.json"
-        self.retriever = Retriever(Embedder(), VectorStore(self.rag_store_path))
+        self.retriever = Retriever(Embedder(), VectorStore(None, db=self.db))
         self._bootstrap_rag_index()
 
     def _bootstrap_rag_index(self) -> None:
         docs: List[Dict[str, str]] = []
         for fact in self.memory_store.get_memory().get("facts", []):
-            if fact.get("content"):
+            if fact.get("text"):
                 docs.append(
-                    {"doc_id": fact.get("id", f"fact-{len(docs)}"), "text": fact["content"], "metadata": {"type": "fact"}}
+                    {"doc_id": fact.get("id", f"fact-{len(docs)}"), "text": fact["text"], "metadata": {"type": "fact"}}
                 )
         for fact in self.memory_store.get_memory().get("dynamic_facts", []):
-            if fact.get("content"):
+            if fact.get("text"):
                 docs.append(
                     {
                         "doc_id": fact.get("id", f"dyn-{len(docs)}"),
-                        "text": fact["content"],
+                        "text": fact["text"],
                         "metadata": {"type": "dynamic_fact", "tags": fact.get("tags", [])},
                     }
                 )
-        for note_path in (notes.NOTES_DIR.glob("*.txt")):
-            text = note_path.read_text(encoding="utf-8-sig").strip()
+        for note in notes.DB.list_notes(limit=50):
+            text = (note.get("content") or "").strip()
             if text:
                 docs.append(
                     {
-                        "doc_id": f"note-{note_path.stem}",
+                        "doc_id": f"note-{note.get('id')}",
                         "text": text,
-                        "metadata": {"type": "note", "title": note_path.stem},
+                        "metadata": {"type": "note", "title": note.get("title")},
                     }
                 )
         if docs:

@@ -1,11 +1,11 @@
 ﻿from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import List
 
-NOTES_DIR = Path(__file__).resolve().parents[2] / "data" / "notes"
-NOTES_DIR.mkdir(parents=True, exist_ok=True)
+from jarvez.storage.db import JarvezDatabase
+
+DB = JarvezDatabase()
 
 
 def _slugify(title: str) -> str:
@@ -16,25 +16,25 @@ def _slugify(title: str) -> str:
 def create_note(title: str, content: str) -> str:
     name = title.strip() or "note"
     slug = _slugify(name)
-    path = NOTES_DIR / f"{slug}.txt"
     body = content.strip() if content else ""
-    path.write_text(body, encoding="utf-8")
-    logging.debug("Note created: %s (%s chars)", path.name, len(body))
-    return f"Saved note '{name}' -> {path.name}"
+    DB.upsert_note(slug, title=name, content=body)
+    logging.debug("Note created: %s (%s chars)", slug, len(body))
+    return f"Saved note '{name}' -> {slug}"
 
 
 def list_notes() -> List[str]:
-    files = sorted(NOTES_DIR.glob("*.txt"))
-    return [f.stem for f in files]
+    notes = DB.list_notes(limit=100)
+    return [n.get("id", "") for n in notes]
 
 
 def read_note(title: str) -> str:
     name = title.strip() or "note"
-    path = NOTES_DIR / f"{_slugify(name)}.txt"
-    if not path.exists():
+    note_id = _slugify(name)
+    note = DB.get_note(note_id)
+    if not note:
         return f"Note '{name}' not found"
-    content = path.read_text(encoding="utf-8-sig")
-    logging.debug("Note read: %s (%s chars)", path.name, len(content))
+    content = note.get("content", "")
+    logging.debug("Note read: %s (%s chars)", note_id, len(content))
     return content or f"Note '{name}' is empty"
 
 
@@ -44,13 +44,15 @@ def search_notes(keyword: str, limit: int = 5) -> List[str]:
         return []
 
     results: List[str] = []
-    for file in sorted(NOTES_DIR.glob("*.txt")):
-        text = file.read_text(encoding="utf-8-sig")
-        if term in text.lower() or term in file.stem.lower():
-            snippet = text.strip().replace("\n", " ")
+    for note in DB.list_notes(limit=200):
+        text = (note.get("content") or "").lower()
+        title = (note.get("title") or "").lower()
+        identifier = (note.get("id") or "").lower()
+        if term in text or term in title or term in identifier:
+            snippet = (note.get("content") or "").strip().replace("\n", " ")
             if len(snippet) > 120:
                 snippet = snippet[:117] + "..."
-            results.append(f"{file.stem}: {snippet}")
+            results.append(f"{note.get('id')}: {snippet}")
         if len(results) >= limit:
             break
     return results
@@ -58,9 +60,9 @@ def search_notes(keyword: str, limit: int = 5) -> List[str]:
 
 def get_note_summaries(limit: int = 3, snippet_chars: int = 120) -> List[str]:
     summaries: List[str] = []
-    for file in sorted(NOTES_DIR.glob("*.txt"))[:limit]:
-        text = file.read_text(encoding="utf-8-sig").strip().replace("\n", " ")
+    for note in DB.list_notes(limit=limit):
+        text = (note.get("content") or "").strip().replace("\n", " ")
         if len(text) > snippet_chars:
             text = text[: snippet_chars - 3] + "..."
-        summaries.append(f"{file.stem}: {text}")
+        summaries.append(f"{note.get('id')}: {text}")
     return summaries

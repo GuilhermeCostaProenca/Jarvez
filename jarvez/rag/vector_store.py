@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Sequence, Tuple
 
 from jarvez.rag.embedder import Embedding
+from jarvez.storage.db import JarvezDatabase
 
 
 @dataclass
@@ -18,16 +19,30 @@ class VectorDocument:
 
 
 class VectorStore:
-    """Simple JSON-backed vector store with dense/sparse support."""
+    """Simple vector store with optional SQLite persistence."""
 
-    def __init__(self, path: str | Path) -> None:
-        self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, path: str | Path | None, db: JarvezDatabase | None = None) -> None:
+        self.path = Path(path) if path else None
+        if self.path:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.db = db
         self.docs: Dict[str, VectorDocument] = {}
         self._load()
 
     def _load(self) -> None:
-        if not self.path.exists():
+        if self.db:
+            for item in self.db.all_rag_chunks():
+                emb_data = item.get("embedding") or {}
+                emb = Embedding(vector=emb_data.get("vector", []), kind=emb_data.get("kind", "sparse"))
+                self.docs[item["id"]] = VectorDocument(
+                    doc_id=item["id"],
+                    text=item.get("text", ""),
+                    metadata=item.get("metadata", {}),
+                    embedding=emb,
+                )
+            return
+
+        if not self.path or not self.path.exists():
             return
         try:
             data = json.loads(self.path.read_text(encoding="utf-8-sig"))
@@ -43,6 +58,13 @@ class VectorStore:
             self.docs = {}
 
     def _save(self) -> None:
+        if self.db:
+            for doc in self.docs.values():
+                self.db.upsert_rag_chunk(doc.doc_id, text=doc.text, metadata=doc.metadata, embedding={"vector": doc.embedding.vector, "kind": doc.embedding.kind})
+            return
+
+        if not self.path:
+            return
         payload = [
             {
                 "doc_id": doc.doc_id,

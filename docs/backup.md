@@ -1,9 +1,9 @@
-# Backup & Restore (v0.7)
+# Backup & Restore (v1.0)
 
 ## What is backed up
-- Files: `data/memory.json`, `data/planner.json`, `data/rag_index.json`, `data/mood_trace.json`
-- Directories: `data/journal`, `data/notes`, `data/captures`
-- Stored under `backups/backup-<timestamp>-v0.7.zip`
+- Files: `data/jarvez.db` (memories, notes, plans, journal, mood, events, settings, RAG, deletions_audit)
+- Directories: `data/captures`, `assets/` relevantes
+- Stored under `backups/backup-<timestamp>-v1.0.zip`
 
 ## How to create
 - CLI: `jarvez backup` (inside CLI prompt)

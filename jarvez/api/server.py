@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
@@ -12,17 +11,17 @@ from jarvez.automation.engine import ENGINE
 from jarvez.core.agent import Agent
 from jarvez.skills import planner
 from jarvez.config import load_config
-from jarvez.mood.store import MoodStore
 from jarvez.telemetry.logger import log_event
 from jarvez.home_assistant import actions as ha_actions
 from jarvez.presence.context import handle_presence_event
 from jarvez.mobile_client import push as mobile_push
+from jarvez.storage.db import JarvezDatabase
 
 app = FastAPI(title="Jarvez API", version="0.9.0")
 
 agent = Agent()
 CONFIG = load_config()
-MOOD_STORE = MoodStore()
+DB = JarvezDatabase()
 
 
 class ChatRequest(BaseModel):
@@ -102,6 +101,12 @@ class PushPayload(BaseModel):
     data: Dict[str, str] = {}
 
 
+class ForgetRequest(BaseModel):
+    query: Optional[str] = None
+    ids: List[str] = []
+    confirm: bool = False
+
+
 @app.post("/chat", response_model=ChatResponse, dependencies=[Depends(require_api_key)])
 def chat(req: ChatRequest) -> ChatResponse:
     if req.mode:
@@ -178,11 +183,18 @@ def send_push(payload: PushPayload) -> Dict[str, Any]:
     return {"status": "ok", "result": result}
 
 
+@app.post("/forget", dependencies=[Depends(require_api_key)])
+def forget(req: ForgetRequest) -> Dict[str, Any]:
+    if not req.confirm:
+        raise HTTPException(status_code=400, detail="confirmation required to forget")
+    stats = DB.forget(query=req.query, ids=req.ids)
+    return {"status": "ok", "stats": stats}
+
+
 @app.get("/status", response_model=StatusResponse)
 def status() -> StatusResponse:
     plans = planner.get_plans()
-    journal_dir = Path("data/journal")
-    journal_files = list(journal_dir.glob("*.json")) if journal_dir.exists() else []
+    journal_entries = DB.list_journal_entries(limit=1000)
     return StatusResponse(
         mode=agent.orchestrator.current_mode.name,
         last_input=agent.last_input,
@@ -192,7 +204,7 @@ def status() -> StatusResponse:
         vision_enabled=CONFIG.vision_enabled,
         mood_enabled=CONFIG.mood_enabled,
         personality_profile=CONFIG.personality_profile,
-        journal_count=len(journal_files),
-        mood_entries=len(MOOD_STORE.recent(9999)),
+        journal_count=len(journal_entries),
+        mood_entries=len(DB.recent_mood(9999)),
         env=CONFIG.env,
     )
